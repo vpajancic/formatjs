@@ -4,7 +4,7 @@ load("@npm//@bazel/typescript:index.bzl", "ts_project")
 load("@npm//karma:index.bzl", "karma_test")
 load("//tools:jest.bzl", "jest_test")
 
-PACKAGE_NAME = "intl-getcanonicallocales"
+PACKAGE_NAME = "intl-displaynames"
 
 pkg_npm(
     name = PACKAGE_NAME,
@@ -22,8 +22,7 @@ TESTS = glob([
 ])
 
 SRC_DEPS = [
-    "@npm//cldr-core",
-    "@npm//@types/node",
+    "//packages/intl-utils:dist",
 ]
 
 TEST_DEPS = SRC_DEPS + [
@@ -60,13 +59,6 @@ ts_project(
     deps = SRC_DEPS,
 )
 
-filegroup(
-    name = "types",
-    srcs = [":dist"],
-    output_group = "types",
-    visibility = ["//visibility:public"],
-)
-
 jest_test(
     name = "unit",
     srcs = [
@@ -84,17 +76,28 @@ jest_test(
     deps = TEST_DEPS,
 )
 
-# aliases
+# locale data
 npm_package_bin(
-    name = "gen_aliases",
-    outs = ["tmp/aliases.ts"],
+    name = "locale-data",
+    # outs = [
+    #   # How to handle a bunch of outputs?
+    #   "tmp/locale-data",
+    #   "tmp/polyfill-locales.js"
+    # ],
     args = [
-        "$(execpath scripts/aliases.ts)",
-        "--out",
-        "$@",
+        "$(execpath scripts/cldr.ts)",
+        "--testDataDir",
+        "$(execpath tests/locale-data)",
+        "--test262MainFile",
+        "$(execpath tests/test262-main.js)",
+        "--outDir",
+        "$(@D)",
+        # TODO: handle polyfill-locale output
+        # "--polyfillLocalesOutFile",
+        # "$1",
     ],
     data = [
-        "scripts/aliases.ts",
+        "scripts/cldr.ts",
         "//:tsconfig.json",
         "@npm//@types/fs-extra",
         "@npm//@types/minimist",
@@ -107,9 +110,9 @@ npm_package_bin(
 )
 
 generated_file_test(
-    name = "aliases",
-    src = "src/aliases.ts",
-    generated = ":gen_aliases",
+    name = "locale_data",
+    src = "src/cldr.ts",
+    generated = ":gen_locale_data",
 )
 
 # karma tests
